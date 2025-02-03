@@ -1,0 +1,1928 @@
+---
+title: "Projet_Oguz_Dylan_Lods"
+author: "Oguz Gurler, Dylan Aouidef et Lods Sokou"
+date: "2024-01-13"
+output: html_document
+---
+
+
+# Partie 1: Importation et pré-traitement / analyse exploratoire des données
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+```
+
+
+```{r}
+# On importe le jeu de données
+donnees <- read.csv2("/Users/dylan/10000h/PDS/JDD/octroi_RCI.csv", header=TRUE, sep=";",dec=",", stringsAsFactors=TRUE)
+head(donnees)
+```
+
+```{r}
+# Repérer et supprimer les doublons
+doublons <- duplicated(donnees) | duplicated(donnees, fromLast = TRUE)
+lignes_doublons <- donnees[doublons, ]
+print(lignes_doublons) # 2 lignes se répètent seulement
+```
+
+
+```{r}
+# Tableau sans doublons
+donnees <- unique(donnees)
+```
+
+
+```{r}
+# Valeurs manquantes
+
+nb_de_valeurs_manquantes <- sum(is.na(donnees))
+print(paste("Le nombre total de valeurs manquantes est",nb_de_valeurs_manquantes))
+
+nb_total_donnees <- nrow(donnees)*ncol(donnees)
+print(paste("Le nombre total de données est",nb_total_donnees))
+
+print(paste("Le pourcentage total de valeurs manquantes est",nb_de_valeurs_manquantes / nb_total_donnees *100)) 
+```
+
+
+```{r}
+# Calcul des pourcentages de valeurs manquantes par colonne
+valeurs_manquantes_col <- colSums(is.na(donnees)) / nrow(donnees) * 100
+
+tableau_pourcentages <- data.frame(
+  Pourcentage_valeurs_manquantes = valeurs_manquantes_col
+)
+
+tableau_pourcentages # Affiche le tableau des pourcentages de NA pour chaque colonne
+```
+
+
+
+
+```{r}
+# Calcul du nombre d'occurrences pour chaque modalité de la variable cible
+
+occurrences <- table(donnees$def12_31)
+occurrences
+occurrences/nrow(donnees) *100 # Taux de cible très petit (1.2 %)
+```
+
+
+```{r}
+# Nouvelle variable de type ratio
+donnees$pc_fin <-donnees$MT_FINANCE/donnees$PRIX_VEH*100
+donnees
+```
+
+```{r}
+# Flag
+donnees <- donnees %>%
+  mutate(proprietaire = as.numeric(MODE_LOGT==2))
+```
+
+
+
+```{r}
+# Seuil à représenter
+seuil <- 22
+
+# Graphique de densité conditionnelle
+ggplot(donnees, aes(x = pc_appo, fill = factor(def12_31))) +
+  geom_density(alpha = 0.5) +
+  geom_vline(xintercept = seuil, linetype = "solid", color = "blue", size = 1) +
+  labs(title = "Pourcentage d'apport en fonction de la variable cible",
+       x = "Pourcentage d'apport", y = "Densité") +
+  theme_minimal()
+
+```
+
+Tests avec certaines valeurs dans le but de déterminer le meilleur seuil pour la variable pc_appo.
+
+1) Avec pc_appo = 22
+
+```{r}
+# Sélectionner les observations où def12_31 = 1
+data_def1 <- subset(donnees, def12_31 == 1)
+
+# Nombre d'individus ayant pc_appo < 22 lorsque def12_31 = 1
+nombre_def1_inf_22 <- sum(data_def1$pc_appo < 22)
+
+# Nombre total d'individus lorsque def12_31 = 1
+nombre_total_def1 <- nrow(data_def1)
+
+# Pourcentage
+pourcentage_def1_inf_22 <- (nombre_def1_inf_22 / nombre_total_def1) * 100
+
+# Afficher les résultats
+print(paste("Nombre d'individus avec pc_appo < 22 lorsque def12_31 = 1:", nombre_def1_inf_22))
+print(paste("Pourcentage d'individus avec pc_appo < 22 lorsque def12_31 = 1:", pourcentage_def1_inf_22))
+```
+
+
+
+```{r}
+# Sélectionner les observations où def12_31 = 1
+data_def1 <- subset(donnees, def12_31 == 1)
+
+# Nombre d'individus ayant pc_appo >= 22 lorsque def12_31 = 1
+nombre_def1_sup_22 <- sum(data_def1$pc_appo >= 22)
+
+# Nombre total d'individus lorsque def12_31 = 1
+nombre_total_def1 <- nrow(data_def1)
+
+# Pourcentage
+pourcentage_def1_sup_22 <- (nombre_def1_sup_22 / nombre_total_def1) * 100
+
+# Afficher les résultats
+print(paste("Nombre d'individus avec pc_appo >= 22 lorsque def12_31 = 1:", nombre_def1_sup_22))
+print(paste("Pourcentage d'individus avec pc_appo >= 22 lorsque def12_31 = 1:", pourcentage_def1_sup_22))
+```
+
+
+
+```{r}
+# Sélectionner les observations où def12_31 = 0
+data_def0 <- subset(donnees, def12_31 == 0)
+
+# Nombre d'individus ayant pc_appo < 22 lorsque def12_31 = 0
+nombre_def0_inf_22 <- sum(data_def0$pc_appo < 22)
+
+# Nombre total d'individus lorsque def12_31 = 0
+nombre_total_def0 <- nrow(data_def0)
+
+# Pourcentage
+pourcentage_def0_inf_22 <- (nombre_def0_inf_22 / nombre_total_def0) * 100
+
+# Afficher les résultats
+print(paste("Nombre d'individus avec pc_appo < 22 lorsque def12_31 = 0:", nombre_def0_inf_22))
+print(paste("Pourcentage d'individus avec pc_appo < 22 lorsque def12_31 = 0:", pourcentage_def0_inf_22))
+```
+
+
+
+```{r}
+# Sélectionner les observations où def12_31 = 0
+data_def0 <- subset(donnees, def12_31 == 0)
+
+# Nombre d'individus ayant pc_appo >= 22 lorsque def12_31 = 0
+nombre_def0_sup_22 <- sum(data_def0$pc_appo >= 22)
+
+# Nombre total d'individus lorsque def12_31 = 0
+nombre_total_def0 <- nrow(data_def0)
+
+# Pourcentage
+pourcentage_def0_sup_22 <- (nombre_def0_sup_22 / nombre_total_def0) * 100
+
+# Afficher les résultats
+print(paste("Nombre d'individus avec pc_appo >= 22 lorsque def12_31 = 0:", nombre_def0_sup_22))
+print(paste("Pourcentage d'individus avec pc_appo >= 22 lorsque def12_31 = 0:", pourcentage_def0_sup_22))
+```
+
+On trouve un écart de 27.06 % entre les lignes du tableau de loi conditionnelle sachant la variable cible.
+
+
+
+2) Test avec pc_appo = 23
+
+```{r}
+# Sélectionner les observations où def12_31 = 0
+data_def0 <- subset(donnees, def12_31 == 0)
+
+# Nombre d'individus ayant pc_appo >= 23 lorsque def12_31 = 0
+nombre_def0_sup_23 <- sum(data_def0$pc_appo >= 23)
+
+# Nombre total d'individus lorsque def12_31 = 0
+nombre_total_def0 <- nrow(data_def0)
+
+# Pourcentage
+pourcentage_def0_sup_23 <- (nombre_def0_sup_23 / nombre_total_def0) * 100
+
+# Afficher les résultats
+print(paste("Nombre d'individus avec pc_appo >= 23 lorsque def12_31 = 0:", nombre_def0_sup_23))
+print(paste("Pourcentage d'individus avec pc_appo >= 23 lorsque def12_31 = 0:", pourcentage_def0_sup_23))
+```
+
+
+
+
+
+```{r}
+# Sélectionner les observations où def12_31 = 1
+data_def1 <- subset(donnees, def12_31 == 1)
+
+# Nombre d'individus ayant pc_appo >= 23 lorsque def12_31 = 1
+nombre_def1_sup_23 <- sum(data_def1$pc_appo >= 23)
+
+# Nombre total d'individus lorsque def12_31 = 1
+nombre_total_def1 <- nrow(data_def1)
+
+# Pourcentage
+pourcentage_def1_sup_23 <- (nombre_def1_sup_23 / nombre_total_def1) * 100
+
+# Afficher les résultats
+print(paste("Nombre d'individus avec pc_appo >= 23 lorsque def12_31 = 1:", nombre_def1_sup_23))
+print(paste("Pourcentage d'individus avec pc_appo >= 23 lorsque def12_31 = 1:", pourcentage_def1_sup_23))
+```
+
+Pour le seuil 23, on trouve cette fois-ci un écart de 25.51 %. Cette écart est plus faible.
+
+
+
+3) Test avec pc_appo = 24
+
+```{r}
+# Sélectionner les observations où def12_31 = 0
+data_def0 <- subset(donnees, def12_31 == 0)
+
+# Nombre d'individus ayant pc_appo >= 24 lorsque def12_31 = 0
+nombre_def0_sup_24 <- sum(data_def0$pc_appo >= 24)
+
+# Nombre total d'individus lorsque def12_31 = 0
+nombre_total_def0 <- nrow(data_def0)
+
+# Pourcentage
+pourcentage_def0_sup_24 <- (nombre_def0_sup_24 / nombre_total_def0) * 100
+
+# Afficher les résultats
+print(paste("Nombre d'individus avec pc_appo >= 24 lorsque def12_31 = 0:", nombre_def0_sup_24))
+print(paste("Pourcentage d'individus avec pc_appo >= 24 lorsque def12_31 = 0:", pourcentage_def0_sup_24))
+```
+
+
+```{r}
+# Sélectionner les observations où def12_31 = 1
+data_def1 <- subset(donnees, def12_31 == 1)
+
+# Nombre d'individus ayant pc_appo >= 24 lorsque def12_31 = 1
+nombre_def1_sup_24 <- sum(data_def1$pc_appo >= 24)
+
+# Nombre total d'individus lorsque def12_31 = 1
+nombre_total_def1 <- nrow(data_def1)
+
+# Pourcentage
+pourcentage_def1_sup_24 <- (nombre_def1_sup_24 / nombre_total_def1) * 100
+
+# Afficher les résultats
+print(paste("Nombre d'individus avec pc_appo >= 24 lorsque def12_31 = 1:", nombre_def1_sup_24))
+print(paste("Pourcentage d'individus avec pc_appo >= 24 lorsque def12_31 = 1:", pourcentage_def1_sup_24))
+```
+
+Pour le seuil 24, on trouve un écart de 25.44 %.
+
+
+-> Après avoir vérifié les résultats pour certaines valeurs, on choisit le seuil 22 pour la variable pc_appo. C'est celle qui présente le plus grand écart.
+
+
+
+
+
+```{r}
+# Points de coupure pour le pourcentage d'apport en utilisant le seuil 22
+points_coupure <- c(-1,22,100)
+
+# Nouvelle variable catégorielle
+donnees <- donnees %>%
+  mutate(Apport = cut(pc_appo, breaks = points_coupure, labels = c(" Apport faible", "Apport élevé")))
+```
+
+
+```{r}
+summary(donnees$Apport)
+```
+
+
+
+```{r}
+# Définition du Top
+donnees$Top_appo_eleve <- ifelse(donnees$Apport == "Apport élevé", 1, 0)
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_appo_faible <- ifelse(donnees$Apport == "Apport faible", 1, 0)
+```
+
+
+
+
+```{r}
+# Table de contingence
+table_densite_jointe <- table(donnees$Top_appo_eleve, donnees$def12_31)
+
+# Affiche la table de densité jointe
+print(table_densite_jointe)
+```
+
+
+
+```{r}
+# Seuil à représenter
+seuil <- 14500
+
+# Graphique de densité conditionnelle
+ggplot(donnees, aes(x = PRIX_VEH, fill = factor(def12_31))) +
+  geom_density(alpha = 0.5) +
+  geom_vline(xintercept = seuil, linetype = "solid", color = "blue", size = 0.7) +
+  geom_text(aes(x = seuil, y = 0, label = as.character(seuil)), vjust = -1, color = "red") +
+  labs(title = "Prix du véhicule en fonction de la variable cible",
+       x = "Prix du véhicule", y = "Densité") +
+  theme_minimal() +
+  xlim(0,42000)
+```
+
+Pour le prix du véhicule, on utilise la même méthode pour trouver le meilleur seuil. On teste les valeurs 14.500, 14.550 et 14.600 et on voit que la valeur 14.500 donne le plus grand écart.
+
+-> On choisit 14.500 pour le seuil du prix du véhicule. On considère comme prix bas les véhicules coûtants moins que 14.500, et prix élevé les véhicules plus cher que cette valeur.
+
+
+
+
+```{r}
+# Points de coupure pour le prix
+points_coupure <- c(-Inf,14500,Inf)
+
+# Nouvelle variable catégorielle
+donnees <- donnees %>%
+  mutate(Prix = cut(PRIX_VEH, breaks = points_coupure, labels = c("Prix bas", "Prix élevé")))
+```
+
+
+```{r}
+summary(donnees$Prix)
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_Prix_eleve <- ifelse(donnees$Prix == "Prix élevé", 1, 0)
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_Prix_bas <- ifelse(donnees$Prix == "Prix bas", 1, 0)
+```
+
+
+
+
+
+```{r}
+# Seuil à représenter
+seuil <- 36
+
+# Graphique de densité conditionnelle
+ggplot(donnees, aes(x = age_cli, fill = factor(def12_31))) +
+  geom_density(alpha = 0.5) +
+  geom_vline(xintercept = seuil, linetype = "solid", color = "blue", size = 1) +
+  geom_text(aes(x = seuil, y = 0.028, label = as.character(seuil)), vjust = -1, color = "red") +
+  labs(title = "L'âge du client en fonction de la variable cible",
+       x = "L'âge du client", y = "Densité") +
+  theme_minimal()
+```
+
+```{r}
+# Points de coupure pour l'âge
+points_coupure <- c(-Inf,36,Inf)
+
+# Nouvelle variable catégorielle
+donnees <- donnees %>%
+  mutate(Client = cut(age_cli, breaks = points_coupure, labels = c("Client jeune", "Client âgé")))
+```
+
+On considère le client:
+
+- jeune si < 36 ans
+- âgé si > 36 ans
+
+```{r}
+summary(donnees$Client) # La majorité des personnes ont plus de 36 ans
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_Client_age <- ifelse(donnees$Client == "Client âgé", 1, 0)
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_Client_jeune <- ifelse(donnees$Client == "Client jeune", 1, 0)
+```
+
+
+
+
+
+```{r}
+# Seuils à représenter
+seuils <- c(32.25,39.7,50,58.7)
+
+# Densité conditionnelle
+ggplot(donnees, aes(x = DUREE_CONTRAT, fill = factor(def12_31))) +
+  geom_density(alpha = 0.5) +
+  geom_vline(xintercept = c(seuils[1], seuils[2]), linetype = "dashed", color = "#E75480") +
+  geom_vline(xintercept = c(seuils[3], seuils[4]), linetype = "dashed", color = "Blue") +
+  annotate("text", x = 32.25, y = 0.1, label = "32.25", color = "#E75480", vjust = -1) +
+  annotate("text", x = 39.7, y = 0.1, label = "39.7", color = "#E75480", vjust = -1) +
+  annotate("text", x = 50, y = 0.1, label = "50", color = "blue", vjust = -1) +
+  annotate("text", x = 58.7, y = 0.1, label = "58.7", color = "blue", vjust = -1) +
+  labs(title = "Durée du contrat en fonction de la variable cible",
+       x = "Durée du contrat", y = "Densité") +
+  theme_minimal() +
+  geom_segment(x = 32.25, xend = 39.7, y = 0.08, yend = 0.08, arrow = arrow(type = "closed", length = unit(0.1, "inches")), color = "#E75480") +
+  geom_segment(x = 50, xend = 58.7, y = 0.08, yend = 0.08, arrow = arrow(type = "closed", length = unit(0.1, "inches")), color = "blue") +
+  geom_segment(x = 39.7, xend = 32.25, y = 0.08, yend = 0.08, arrow = arrow(type = "closed", length = unit(0.1, "inches")), color = "#E75480") +
+  geom_segment(x = 58.7, xend = 50, y = 0.08, yend = 0.08, arrow = arrow(type = "closed", length = unit(0.1, "inches")), color = "blue")
+```
+
+On définit plusieurs zones où l'on voit que la durée du contrat est adaptée ou inadaptée. En fonction de ceci, on pourra indiquer si une personne est susceptible de faire défaut ou pas.
+
+
+```{r}
+# Définir les seuils
+seuils <- c(0, 11, 20, 26, 32.25, 39.7,46,50,58.7,60)
+
+# Nouvelle variable concernant la durée du contrat
+donnees$Contrat_adapte <- cut(donnees$DUREE_CONTRAT, 
+                                   breaks = seuils, 
+                                   labels = c("Oui", "Non","Oui","Non","Oui","Non","Oui","Non","Oui"), 
+                                   include.lowest = TRUE, 
+                                   right = FALSE)
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_Contrat_adapte<- ifelse(donnees$Contrat_adapte == "Oui", 1, 0)
+```
+
+
+
+```{r}
+# Définition du Top
+donnees$Top_Contrat_inadapte<- ifelse(donnees$Contrat_adapte == "Non", 1, 0)
+```
+
+
+
+```{r}
+# Seuil à représenter
+seuil <- 170
+
+# Graphique de densité conditionnelle avec le seuil
+ggplot(donnees, aes(x = ANC_EMPLOI, fill = factor(def12_31))) +
+  geom_density(alpha = 0.5) +
+  geom_vline(xintercept = seuil, linetype = "solid", color = "blue", size = 1) +
+  geom_text(aes(x = seuil, y = 0, label = as.character(seuil)), vjust = -1, color = "red") +
+  labs(title = "L'ancienneté à l'emploi en fonction de la variable cible",
+       x = "L'ancienneté à l'emploi", y = "Densité") +
+  theme_minimal() +
+  xlim(0,600)
+```
+
+Si l'ancienneté à l'emploi est inférieure à 170, on suppose que c'est un emploi récent. Si cette ancienneté dépasse 170, on dira que le client a un emploi stable.
+
+```{r}
+# Points de coupure pour l'ancienneté à l'emploi
+points_coupure <- c(0,170,Inf)
+
+# Nouvelle variable catégorielle
+donnees <- donnees %>%
+  mutate(Ancien_emploi = cut(ANC_EMPLOI, breaks = points_coupure, labels = c("Non", "Oui")))
+```
+
+
+
+```{r}
+# Définition du Top
+donnees$Top_Ancien_emploi <- ifelse(donnees$Ancien_emploi == "Oui", 1, 0)
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_emploi_Recent <- ifelse(donnees$Ancien_emploi == "Non", 1, 0)
+```
+
+
+
+
+```{r}
+table(donnees$anciennete_rci)
+```
+
+```{r}
+# On remplace par 0 les NA de anciennete_rci. On voit donc ces individus
+# comme des nouveaux clients
+donnees$anciennete_rci <- replace(donnees$anciennete_rci, is.na(donnees$anciennete_rci), 0)
+```
+
+
+```{r}
+table(donnees$anciennete_rci,donnees$def12_31)
+```
+
+
+
+```{r}
+# Calculer le nombre d'occurrences pour chaque modalité
+occurrences <- table(donnees$MODE_LOGT)
+
+# Diagramme en barres
+barplot(occurrences, names.arg = c("1", "2","3","4"), col = c("red", "blue","green","black"), main = "Répartition du mode de logement")
+```
+
+
+
+
+```{r}
+table(donnees$def12_31,donnees$SITUATION_FAM)
+```
+
+
+Définition de plusieurs nouvelles features avec les Top associés:
+
+```{r}
+# Nouvelle variable
+donnees$celibataire <- ifelse(donnees$SITUATION_FAM == 2, "Oui", "Non")
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_celibataire <- ifelse(donnees$celibataire == "Oui", 1, 0)
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_non_celibataire <- ifelse(donnees$celibataire == "Non", 1, 0)
+```
+
+
+
+```{r}
+# Nouvelle variable
+donnees$marie <- ifelse(donnees$SITUATION_FAM == 1, "Oui", "Non")
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_marie <- ifelse(donnees$marie == "Oui", 1, 0)
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_non_marie <- ifelse(donnees$marie == "Non", 1, 0)
+```
+
+
+
+```{r}
+table(donnees$MODE_LOGT,donnees$def12_31)
+```
+
+
+
+```{r}
+# Nouvelle variable
+donnees$proprietaire <- ifelse(donnees$MODE_LOGT == 2, "Oui", "Non")
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_proprietaire <- ifelse(donnees$proprietaire == "Oui", 1, 0)
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_non_proprietaire <- ifelse(donnees$proprietaire == "Non", 1, 0)
+```
+
+
+
+```{r}
+# Nouvelle variable (locataire ou chez les parents)
+donnees <- donnees %>%
+  mutate(loc_parent = ifelse(MODE_LOGT %in% c(1, 4), "Oui", "Non"))
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_loc_parent <- ifelse(donnees$loc_parent == "Oui", 1, 0)
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_hors_loc_parent <- ifelse(donnees$loc_parent == "Non", 1, 0)
+```
+
+
+
+
+```{r}
+# Seuil à représenter
+seuil <- 31.4
+
+# Graphique de densité conditionnelle avec le seuil
+ggplot(donnees, aes(x = AGE_VEH, fill = factor(def12_31))) +
+  geom_density(alpha = 0.5) +
+  geom_vline(xintercept = seuil, linetype = "solid", color = "blue", size = 1) +
+  geom_text(aes(x = seuil, y = 0, label = as.character(seuil)), vjust = -1, color = "red") +
+  labs(title = "L'âge du véhicule en fonction de la variable cible",
+       x = "L'âge du véhicule", y = "Densité") +
+  theme_minimal()
+```
+
+
+```{r}
+# Points de coupure pour l'âge du véhicule
+points_coupure <- c(0,31.4,Inf)
+
+# Nouvelle variable
+donnees <- donnees %>%
+  mutate(Ancien_vehicule = cut(AGE_VEH, breaks = points_coupure, labels = c("Non", "Oui")))
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_ancien_veh <- ifelse(donnees$Ancien_vehicule == "Oui", 1, 0)
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_nouveau_veh <- ifelse(donnees$Ancien_vehicule == "Non", 1, 0)
+```
+
+
+
+
+```{r}
+# On remplace les NA par 0 en supposant qu'elles correspondent
+# à des véhicules nouveaux dont l'âge n'est pas encore renseignée
+donnees$Top_ancien_veh <- replace(donnees$Top_ancien_veh, is.na(donnees$Top_ancien_veh), 0)
+```
+
+
+
+```{r}
+# On remplace les NA par 1 en supposant qu'elles correspondent
+# à des véhicules nouveaux dont l'âge n'est pas encore renseignée
+donnees$Top_nouveau_veh <- replace(donnees$Top_nouveau_veh, is.na(donnees$Top_nouveau_veh), 1)
+```
+
+
+
+```{r}
+table(donnees$def12_31,donnees$VN_VO)
+```
+
+
+```{r}
+# Nouvelle variable
+donnees$VEH_OCCASION <- ifelse(donnees$VN_VO == "VO", "Oui", "Non")
+```
+
+
+
+```{r}
+# Définition du Top
+donnees$Top_VEH_OCCASION <- ifelse(donnees$VEH_OCCASION == "Oui", 1, 0)
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_VEH_NON_OCCASION <- ifelse(donnees$VEH_OCCASION == "Non", 1, 0)
+```
+
+
+
+```{r}
+table(donnees$MARQUE) # 31 marques
+```
+
+
+```{r}
+table(donnees$def12_31,donnees$MARQUE) # 18 marques sans défaut
+```
+
+
+```{r}
+donnees <- donnees %>%
+  mutate(MARQUE_SANS_DEF = ifelse(MARQUE %in% c("AUD", "DAI", "FIA", "GWA", "HON", "JAG", "KIA", "LAO", "MER", "MIN", "MIT", "PEU", "SAA", "SKO", "SUB", "SUZ", "VOL", "VOV"), "Oui", "Non"))
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_MARQUE_SANS_DEF <- ifelse(donnees$MARQUE_SANS_DEF == "Oui", 1, 0)
+```
+
+
+
+```{r}
+donnees <- donnees %>%
+  mutate(MARQUE_AVEC_DEF = ifelse(MARQUE %in% c("BMW", "CHV", "CIT", "DAC", "FOR", "HYU", "MAZ", "NIS", "OPE", "REN", "SEA", "TOY", "VAU"), "Oui", "Non"))
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_MARQUE_AVEC_DEF <- ifelse(donnees$MARQUE_AVEC_DEF == "Oui", 1, 0)
+```
+
+
+
+```{r}
+donnees <- donnees %>%
+  mutate(MARQUE_FAIBLE_RISQUE = ifelse(MARQUE %in% c("DAC", "FOR", "NIS", "REN", "TOY"), "Oui", "Non"))
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_MARQUE_FAIBLE_RISQUE <- ifelse(donnees$MARQUE_FAIBLE_RISQUE == "Oui", 1, 0)
+```
+
+
+```{r}
+table(donnees$Top_MARQUE_FAIBLE_RISQUE,donnees$def12_31)
+```
+
+
+
+```{r}
+# Marques dont le pourcentage de défaut est > 4 %
+donnees <- donnees %>%
+  mutate(MARQUE_HAUT_RISQUE = ifelse(MARQUE %in% c("BMW", "CHV", "CIT", "HYU", "MAZ", "OPE", "SEA", "VAU"), "Oui", "Non"))
+```
+
+
+
+
+```{r}
+# Définition du Top
+donnees$Top_MARQUE_HAUT_RISQUE <- ifelse(donnees$MARQUE_HAUT_RISQUE == "Oui", 1, 0)
+```
+
+
+
+```{r}
+donnees_def1 <- subset(donnees, def12_31 == 1)
+# Compter le nombre d'individus avec MARQUE_FAIBLE_RISQUE = "Oui"
+nombre_oui <- sum(donnees_def1$MARQUE_FAIBLE_RISQUE == "Oui")
+
+# Afficher le résultat
+print(nombre_oui)
+```
+
+
+
+```{r}
+donnees_def0 <- subset(donnees, def12_31 == 0)
+# Compter le nombre d'individus avec MARQUE_FAIBLE_RISQUE = "Oui"
+nombre_oui <- sum(donnees_def0$MARQUE_FAIBLE_RISQUE == "Oui")
+
+# Afficher le résultat
+print(nombre_oui)
+```
+
+
+```{r}
+# Compter le nombre d'individus avec MARQUE_FAIBLE_RISQUE = "Oui"
+nombre_oui <- sum(donnees$MARQUE_FAIBLE_RISQUE == "Oui")
+
+# Afficher le résultat
+print(nombre_oui)
+```
+
+
+
+
+```{r}
+# Seuil à représenter
+seuil <- 255
+
+# Graphique de densité conditionnelle avec le seuil
+ggplot(donnees, aes(x = MT_MENS, fill = factor(def12_31))) +
+  geom_density(alpha = 0.5) +
+  geom_vline(xintercept = seuil, linetype = "solid", color = "red", size = 1) +
+  geom_text(aes(x = seuil, y = 0, label = as.character(seuil)), vjust = -1, color = "blue") +
+  labs(title = "Montant de la mensualité en fonction de la variable cible",
+       x = "Montant de la mensualité", y = "Densité") +
+  theme_minimal() +
+  xlim(0,600)
+```
+
+
+Mensualité petite si < 255
+Mensualité élevée si >= 255
+
+```{r}
+# Points de coupure pour la mensualité
+points_coupure <- c(-Inf,255,Inf)
+
+# Nouvelle variable
+donnees <- donnees %>%
+  mutate(Mensualite = cut(MT_MENS, breaks = points_coupure, labels = c("Mensualité petite", "Mensualité élevée")))
+```
+
+
+
+```{r}
+# Définition du Top
+donnees$Top_MENSUALITE_FAIBLE <- ifelse(donnees$Mensualite == "Mensualité petite", 1, 0)
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_MENSUALITE_ELEVEE <- ifelse(donnees$Mensualite == "Mensualité élevée", 1, 0)
+```
+
+
+
+
+```{r}
+# Seuil à représenter
+seuil <- 8500
+
+# Graphique de densité conditionnelle avec le seuil
+ggplot(donnees, aes(x = VR_BALLON, fill = factor(def12_31))) +
+  geom_density(alpha = 0.5) +
+  geom_vline(xintercept = seuil, linetype = "solid", color = "red", size = 1) +
+  geom_text(aes(x = seuil, y = 0, label = as.character(seuil)), vjust = -1, color = "blue") +
+  labs(title = "Montant ballon en fonction de la variable cible",
+       x = "Montant ballon", y = "Densité") +
+  theme_minimal()
+```
+
+```{r}
+# Points de coupure pour le montant ballon
+points_coupure <- c(-Inf,8500,Inf)
+
+# Nouvelle variable
+donnees <- donnees %>%
+  mutate(MONTANT_BALLON = cut(VR_BALLON, breaks = points_coupure, labels = c("Petit montant", "Montant élevé")))
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_MONTANT_BALLON_PETIT <- ifelse(donnees$MONTANT_BALLON == "Petit montant", 1, 0)
+```
+
+
+
+```{r}
+# Définition du Top
+donnees$Top_MONTANT_BALLON_ELEVE <- ifelse(donnees$MONTANT_BALLON == "Montant élevé", 1, 0)
+```
+
+
+
+```{r}
+table(donnees$def12_31, donnees$anciennete_rci)
+```
+
+
+
+```{r}
+# Nouvelle variable (nouveau client ou pas)
+donnees <- donnees %>%
+  mutate(NOUVEAU_CLIENT = ifelse(anciennete_rci %in% c(0,1), "Oui", "Non"))
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_NOUVEAU_CLIENT <- ifelse(donnees$NOUVEAU_CLIENT == "Oui", 1, 0)
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_ANCIEN_CLIENT <- ifelse(donnees$NOUVEAU_CLIENT == "Non", 1, 0)
+```
+
+
+
+```{r}
+# Seuil à représenter
+seuil <- 78
+
+# Graphique de densité conditionnelle avec le seuil
+ggplot(donnees, aes(x = pc_fin, fill = factor(def12_31))) +
+  geom_density(alpha = 0.5) +
+  geom_vline(xintercept = seuil, linetype = "solid", color = "red", size = 1) +
+  geom_text(aes(x = seuil, y = 0, label = as.character(seuil)), vjust = -1, color = "blue") +
+  labs(title = "Pourcentage financé en fonction de la variable cible",
+       x = "Pourcentage financé", y = "Densité") +
+  theme_minimal()
+```
+
+
+
+```{r}
+# Points de coupure pour le pourcentage financé
+points_coupure <- c(-Inf,78,Inf)
+
+# Nouvelle variable
+donnees <- donnees %>%
+  mutate(POURCENTAGE_FINANCE = cut(pc_fin, breaks = points_coupure, labels = c("Petit pourcentage", "Pourcentage élevé")))
+```
+
+
+
+```{r}
+# Définition du Top
+donnees$Top_PC_FIN_ELEVE <- ifelse(donnees$POURCENTAGE_FINANCE == "Pourcentage élevé", 1, 0)
+```
+
+
+
+```{r}
+# Définition du Top
+donnees$Top_PC_FIN_PETIT <- ifelse(donnees$POURCENTAGE_FINANCE == "Petit pourcentage", 1, 0)
+```
+
+
+
+```{r}
+# Variable de type ratio
+donnees$pc_mens_prix <-donnees$MT_MENS/donnees$PRIX_VEH*100
+```
+
+
+```{r}
+# Seuil à représenter
+seuil <- 1.62
+
+# Graphique de densité conditionnelle avec le seuil
+ggplot(donnees, aes(x = pc_mens_prix, fill = factor(def12_31))) +
+  geom_density(alpha = 0.5) +
+  geom_vline(xintercept = seuil, linetype = "solid", color = "red", size = 1) +
+  geom_text(aes(x = seuil, y = 0, label = as.character(seuil)), vjust = -1, color = "blue") +
+  labs(title = "Ratio Mensualité / Prix du véhicule en fonction de la variable cible",
+       x = "Pourcentage ratio Mensualité / Prix du véhicule ", y = "Densité") +
+  theme_minimal() +
+  xlim(0,3.5)
+```
+
+
+```{r}
+# Points de coupure pour le pourcentage mensualité / Prix
+points_coupure <- c(-Inf,1.62,Inf)
+
+# Nouvelle variable
+donnees <- donnees %>%
+  mutate(POURCENTAGE_MENS_PRIX = cut(pc_mens_prix, breaks = points_coupure, labels = c("Petit pourcentage", "Pourcentage élevé")))
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_PC_MENS_PRIX_GRAND <- ifelse(donnees$POURCENTAGE_MENS_PRIX == "Pourcentage élevé", 1, 0)
+```
+
+
+```{r}
+# Définition du Top
+donnees$Top_PC_MENS_PRIX_PETIT <- ifelse(donnees$POURCENTAGE_MENS_PRIX == "Petit pourcentage", 1, 0)
+```
+
+
+
+```{r}
+summary(donnees$Mensualite)
+```
+
+
+
+
+
+
+```{r}
+donnees 
+```
+
+
+# Elaboration profil robot
+
+
+```{r}
+data_defaut=donnees[which(donnees$def12_31==1),]
+data_non_defaut=donnees[which(donnees$def12_31==0),]
+summary(data_defaut)
+summary(data_non_defaut)
+```
+
+
+
+
+
+
+# Partie 2: Division des données et ré-échantillonnage
+
+## (i) Division des données
+
+On fait le choix de prendre 70 % des données pour l'ensemble d'entraînement et 30 % pour l'ensemble test. On fait attention pour avoir le même taux de cible dans les 2 ensembles.
+
+```{r}
+library(caret)
+
+# Définir la variable cible
+target_variable <- donnees$def12_31
+
+# Utiliser createDataPartition pour diviser de manière stratifiée
+set.seed(42)  # Pour la reproductibilité
+indexes <- createDataPartition(target_variable, p = 0.7, list = FALSE, times = 1)
+
+# Ensembles d'entraînement et de test
+data_train <- donnees[indexes, ]
+data_test <- donnees[-indexes, ]
+
+```
+
+
+
+
+```{r}
+print(dim(data_train))
+print(dim(data_test))
+```
+
+
+```{r}
+nombre_individus_avec_1 <- sum(data_train$def12_31 == 1)
+
+# Afficher le résultat
+print(nombre_individus_avec_1)
+print(nombre_individus_avec_1 / nrow(data_train)*100)
+
+```
+
+
+```{r}
+nombre_individus_avec_1 <- sum(data_test$def12_31 == 1)
+
+# Afficher le résultat
+print(nombre_individus_avec_1)
+print(nombre_individus_avec_1 / nrow(data_test)*100)
+
+```
+
+
+
+## (ii) Ré-échantillonnage avec la méthode SMOTE
+
+Nous allons appliquer la méthode SMOTE pour le sur-échantillonnage, seulement sur l'ensemble d'entraînement.
+
+
+Il faut gérer les valeurs manquantes. On le fait d'abord sur l'ensemble d'entraînement pour que les données de l'ensemble test n'influencent pas le processus d'imputation:
+
+```{r}
+# Calcul des pourcentages de valeurs manquantes par colonne
+valeurs_manquantes_col <- colSums(is.na(data_train)) / nrow(data_train) * 100
+
+tableau_pourcentages <- data.frame(
+  Pourcentage_valeurs_manquantes = valeurs_manquantes_col
+)
+
+tableau_pourcentages # Affiche le tableau des pourcentages de NA pour chaque colonne
+```
+
+
+
+
+```{r}
+# On suppose que les valeurs manquantes correspondent au mode de logement "Autre"
+data_train$MODE_LOGT <- ifelse(is.na(data_train$MODE_LOGT), 3, data_train$MODE_LOGT)
+```
+
+
+
+```{r}
+# Les valeurs manquantes pour l'âge du véhicule sont considérées comme 1 (nouveau véhicule)
+data_train$AGE_VEH <- ifelse(is.na(data_train$AGE_VEH), 1, data_train$AGE_VEH)
+```
+
+
+```{r}
+# On remplace les NA par la moyenne pour la variable VR_BALLON
+mean_vr_ballon <- mean(data_train$VR_BALLON, na.rm = TRUE)  # Calcul de la moyenne en excluant les NA
+data_train$VR_BALLON <- ifelse(is.na(data_train$VR_BALLON), mean_vr_ballon, data_train$VR_BALLON)
+
+```
+
+
+```{r}
+# On remplace les NA par la moyenne pour la variable MT_PREST
+mean_mt_prest <- mean(data_train$MT_PREST, na.rm = TRUE)  # Calcul de la moyenne en excluant les NA
+data_train$MT_PREST <- ifelse(is.na(data_train$MT_PREST), mean_mt_prest, data_train$MT_PREST)
+
+```
+
+
+
+```{r}
+# On remplace les NA par la moyenne pour la variable MT_ASSUR
+mean_mt_assur <- mean(data_train$MT_ASSUR, na.rm = TRUE)  # Calcul de la moyenne en excluant les NA
+data_train$MT_ASSUR <- ifelse(is.na(data_train$MT_ASSUR), mean_mt_assur, data_train$MT_ASSUR)
+
+```
+
+
+```{r}
+# Les NA ne correspondent pas à des propriétaires
+data_train$proprietaire <- ifelse(is.na(data_train$proprietaire), "Non", data_train$proprietaire)
+
+```
+
+
+```{r}
+# Les valeurs manquantes valent 0 pour la variable Top_proprietaire
+data_train$Top_proprietaire <- ifelse(is.na(data_train$Top_proprietaire), 0, data_train$Top_proprietaire)
+```
+
+
+```{r}
+# Les valeurs manquantes valent 1 pour la variable Top_non_proprietaire
+data_train$Top_non_proprietaire <- ifelse(is.na(data_train$Top_non_proprietaire), 1, data_train$Top_non_proprietaire)
+```
+
+
+```{r}
+# Les NA correspondent à des nouveaux véhicules
+data_train$Ancien_vehicule <- replace(data_train$Ancien_vehicule, is.na(data_train$Ancien_vehicule), "Non")
+```
+
+
+```{r}
+# Les NA correspondent à des montants ballons élevés
+data_train$MONTANT_BALLON <- replace(data_train$MONTANT_BALLON, is.na(data_train$MONTANT_BALLON), "Montant élevé")
+```
+
+
+```{r}
+# Les valeurs manquantes valent 0 pour la variable Top_MONTANT_BALLON_PETIT
+data_train$Top_MONTANT_BALLON_PETIT <- ifelse(is.na(data_train$Top_MONTANT_BALLON_PETIT), 0, data_train$Top_MONTANT_BALLON_PETIT)
+```
+
+
+```{r}
+# Les valeurs manquantes valent 1 pour la variable Top_MONTANT_BALLON_ELEVE
+data_train$Top_MONTANT_BALLON_ELEVE <- ifelse(is.na(data_train$Top_MONTANT_BALLON_ELEVE), 1, data_train$Top_MONTANT_BALLON_ELEVE)
+```
+
+
+```{r}
+data_train
+```
+
+
+
+```{r}
+# Calcul des pourcentages de valeurs manquantes par colonne
+valeurs_manquantes_col <- colSums(is.na(data_train)) / nrow(data_train) * 100
+
+tableau_pourcentages <- data.frame(
+  Pourcentage_valeurs_manquantes = valeurs_manquantes_col
+)
+
+tableau_pourcentages # Affiche le tableau des pourcentages de NA pour chaque colonne
+```
+
+- > Il ne reste plus de valeurs manquantes dans la table d'entraînement.
+
+Maintenant, on va utiliser les mêmes méthodes pour imputer les données manquantes de l'ensemble test:
+
+
+
+```{r}
+# On suppose que les valeurs manquantes correspondent au mode de logement "Autre"
+data_test$MODE_LOGT <- ifelse(is.na(data_test$MODE_LOGT), 3, data_test$MODE_LOGT)
+```
+
+
+
+```{r}
+# Les valeurs manquantes pour l'âge du véhicule sont considérées comme 1 (nouveau véhicule)
+data_test$AGE_VEH <- ifelse(is.na(data_test$AGE_VEH), 1, data_test$AGE_VEH)
+```
+
+
+```{r}
+# On remplace les NA par la moyenne pour la variable VR_BALLON
+mean_vr_ballon <- mean(data_test$VR_BALLON, na.rm = TRUE)  # Calcul de la moyenne en excluant les NA
+data_test$VR_BALLON <- ifelse(is.na(data_test$VR_BALLON), mean_vr_ballon, data_test$VR_BALLON)
+
+```
+
+
+```{r}
+# On remplace les NA par la moyenne pour la variable MT_PREST
+mean_mt_prest <- mean(data_test$MT_PREST, na.rm = TRUE)  # Calcul de la moyenne en excluant les NA
+data_test$MT_PREST <- ifelse(is.na(data_test$MT_PREST), mean_mt_prest, data_test$MT_PREST)
+
+```
+
+
+
+```{r}
+# On remplace les NA par la moyenne pour la variable MT_ASSUR
+mean_mt_assur <- mean(data_test$MT_ASSUR, na.rm = TRUE)  # Calcul de la moyenne en excluant les NA
+data_test$MT_ASSUR <- ifelse(is.na(data_test$MT_ASSUR), mean_mt_assur, data_test$MT_ASSUR)
+
+```
+
+
+```{r}
+# Les NA ne correspondent pas à des propriétaires
+data_test$proprietaire <- ifelse(is.na(data_test$proprietaire), "Non", data_test$proprietaire)
+
+```
+
+
+```{r}
+# Les valeurs manquantes valent 0 pour la variable Top_proprietaire
+data_test$Top_proprietaire <- ifelse(is.na(data_test$Top_proprietaire), 0, data_test$Top_proprietaire)
+```
+
+
+```{r}
+# Les valeurs manquantes valent 1 pour la variable Top_non_proprietaire
+data_test$Top_non_proprietaire <- ifelse(is.na(data_test$Top_non_proprietaire), 1, data_test$Top_non_proprietaire)
+```
+
+
+```{r}
+# Les NA correspondent à des nouveaux véhicules
+data_test$Ancien_vehicule <- replace(data_test$Ancien_vehicule, is.na(data_test$Ancien_vehicule), "Non")
+```
+
+
+```{r}
+# Les NA correspondent à des montants ballons élevés
+data_test$MONTANT_BALLON <- replace(data_test$MONTANT_BALLON, is.na(data_test$MONTANT_BALLON), "Montant élevé")
+```
+
+
+```{r}
+# Les valeurs manquantes valent 0 pour la variable Top_MONTANT_BALLON_PETIT
+data_test$Top_MONTANT_BALLON_PETIT <- ifelse(is.na(data_test$Top_MONTANT_BALLON_PETIT), 0, data_test$Top_MONTANT_BALLON_PETIT)
+```
+
+
+```{r}
+# Les valeurs manquantes valent 1 pour la variable Top_MONTANT_BALLON_ELEVE
+data_test$Top_MONTANT_BALLON_ELEVE <- ifelse(is.na(data_test$Top_MONTANT_BALLON_ELEVE), 1, data_test$Top_MONTANT_BALLON_ELEVE)
+```
+
+
+
+```{r}
+data_test
+```
+
+
+```{r}
+# Calcul des pourcentages de valeurs manquantes par colonne
+valeurs_manquantes_col <- colSums(is.na(data_test)) / nrow(data_test) * 100
+
+tableau_pourcentages <- data.frame(
+  Pourcentage_valeurs_manquantes = valeurs_manquantes_col
+)
+
+tableau_pourcentages # Affiche le tableau des pourcentages de NA pour chaque colonne
+```
+
+- > Il nous reste plus de NA dans l'ensemble de test également.
+
+
+On passe maintenant à la méthode SMOTE pour le sur-échantillonnage:
+
+```{r}
+# On a des variables quantitatives et qualitatives
+library(RSBID)
+data_train_smote = SMOTE_NC(data_train, "def12_31") # k=5 par défaut, perc_maj=100 par défaut
+```
+
+
+```{r}
+data_train_smote
+```
+
+
+```{r}
+table(data_train_smote$def12_31)
+```
+
+
+Le taux de cible vaut maintenant 50 % après avoir utilisé la méthode SMOTE.
+
+
+
+# Partie 3: Régression logistique et performances
+
+## (i) Régression logistique
+
+But: Entraîner 2 modèles de régression logistique, une sur la table data_train_smote, et l'autre sur data_train, dans le but de voir l'impact de la méthode SMOTE sur la qualité du modèle.
+
+
+Nous allons d'abord effectuer une régression logistique sur data_train_smote.
+
+
+```{r}
+# Obtenir les noms de colonnes actuels
+colnames(data_train_smote)
+```
+
+
+
+```{r}
+# Chargement de la librairie de régression logistique
+library(stats)
+
+# Modèle de régression logistique
+modele <- glm(def12_31 ~ Top_proprietaire + Top_PC_FIN_ELEVE + Top_MARQUE_AVEC_DEF + Top_MONTANT_BALLON_ELEVE + Top_nouveau_veh + Top_MARQUE_HAUT_RISQUE + Top_Prix_bas + Top_celibataire, data = data_train_smote, family = binomial)
+
+# Affichage des résultats du modèle
+summary(modele)
+
+```
+
+
+Après avoir testé beaucoup de configurations différentes concernant les variables explicatives, nous avons décidé d'en selectionner 8 pour le modèle de régression logistique: 
+
+Top_proprietaire , Top_PC_FIN_ELEVE , 
+Top_MARQUE_AVEC_DEF , Top_MONTANT_BALLON_ELEVE , Top_nouveau_veh , 
+Top_MARQUE_HAUT_RISQUE , Top_Prix_bas , Top_celibataire
+
+
+
+```{r}
+library(ggplot2)
+
+# Créer un dataframe avec les coefficients et les noms de variables
+coef_df <- data.frame(
+  Variable = c("Top_proprietaire", "Top_PC_FIN_ELEVE", 
+               "Top_nouveau_veh", "Top_MARQUE_HAUT_RISQUE"),
+  Coefficient = c(-1.20370, 1.08388,-1.05322, 1.97544)
+)
+
+# Créer un graphique de barres
+ggplot(coef_df, aes(x = "", y = Coefficient, fill = Variable)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = Variable), position = position_dodge(width = 0.9), vjust = -0.5) +
+  labs(title = "Variables les plus significatives",
+       x = "",
+       y = "Coefficients") +
+  theme_minimal() +
+  theme(axis.text.x = element_blank())  # Enlève les noms des variables sur l'axe des abscisses
+
+
+```
+
+
+
+Les variables les plus significatives pour le modèle sont donc:
+
+- Top_MARQUE_HAUT_RISQUE
+- Top_nouveau_veh
+- Top_PC_FIN_ELEVE
+- Top_proprietaire
+
+
+
+```{r}
+table(data_test$def12_31)
+```
+
+
+
+
+```{r}
+# Prédictions sur l'échantillon test
+predictions_1 <- predict(modele, newdata = data_test, type = "response")
+
+# Transformation des prédictions en classes binaires (0 ou 1)
+predictions_classes <- ifelse(predictions_1 > 0.5, 1, 0)
+
+# Tableau de confusion
+table(predictions_classes, data_test$def12_31)
+
+```
+
+
+
+Maintenant, on utilise le même modèle avec les mêmes variables explicatives et la même variable cible sur data_train:
+
+
+```{r}
+# Chargement de la librairie de régression logistique
+library(stats)
+
+# Modèle de régression logistique
+modele_2 <- glm(def12_31 ~ Top_proprietaire + Top_PC_FIN_ELEVE + Top_MARQUE_AVEC_DEF + Top_MONTANT_BALLON_ELEVE + Top_nouveau_veh + Top_MARQUE_HAUT_RISQUE + Top_Prix_bas + Top_celibataire, data = data_train, family = binomial)
+
+# Affichage des résultats du modèle
+summary(modele_2)
+```
+
+
+
+
+
+```{r}
+# Prédictions sur l'échantillon test
+predictions_2 <- predict(modele_2, newdata = data_test, type = "response")
+
+# Transformation des prédictions en classes binaires (0 ou 1)
+predictions_classes_2 <- ifelse(predictions_2 > 0.2, 1, 0)
+
+# Tableau de confusion
+table(predictions_classes_2, data_test$def12_31)
+```
+
+
+-> Le modèle sur la table data_train prédit 3 cas positifs correctement.
+
+
+```{r}
+library(ggplot2)
+
+# Créer un dataframe avec les coefficients et les noms de variables
+coef_df <- data.frame(
+  Variable = c("Top_PC_FIN_ELEVE", "Top_MARQUE_HAUT_RISQUE"),
+  Coefficient = c(1.04325,1.35092)
+)
+
+# Créer un graphique de barres
+ggplot(coef_df, aes(x = "", y = Coefficient, fill = Variable)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = Variable), position = position_dodge(width = 0.9), vjust = -0.5) +
+  labs(title = "Variables les plus significatives",
+       x = "",
+       y = "Coefficients") +
+  theme_minimal() +
+  theme(axis.text.x = element_blank())  # Enlève les noms des variables sur l'axe des abscisses
+
+
+```
+
+
+Les 2 variables les plus significatives pour le modèle de régression logistique sur data_train sont Top_MARQUE_HAUT_RISQUE et Top_PC_FIN_ELEVE.
+
+
+On va maintenant analyser les performances des deux méthodes en détails.
+
+
+## (ii) Performances
+
+
+### (a) Courbes ROC
+
+On commence par les courbes ROC sur les échantillons d'entraînement:
+
+
+```{r}
+# Installer la bibliothèque pROC si ce n'est pas déjà fait
+# install.packages("pROC")
+
+# Charger la bibliothèque
+library(pROC)
+
+
+# Prédictions et probabilités pour data_train
+pred_train <- predict(modele_2, type = "response")
+roc_train <- roc(data_train$def12_31, pred_train)
+
+
+# Prédictions et probabilités pour data_train_smote
+pred_smote <- predict(modele, type = "response")
+roc_smote <- roc(data_train_smote$def12_31, pred_smote)
+
+# Tracer les courbes ROC superposées
+plot(roc_train, col = "blue", main = "Courbes ROC sur les échantillons d'entraînement", lwd = 2)
+plot(roc_smote, col = "red", add = TRUE, lwd = 2)
+
+# Légendes
+legend("bottomright", legend = c("Score pour data_train", "Score pour data_train_smote"), col = c("blue", "red"), lwd = 4, cex = 1.1)
+
+# Ajouter le texte pour les AUC
+text(0, 0.7, paste("AUC2 =", round(roc_train$auc, 3)), col = "blue")
+text(0, 0.8, paste("AUC1 =", round(roc_smote$auc, 3)), col = "red")
+```
+
+
+
+```{r}
+# Charger la bibliothèque pROC si ce n'est pas déjà fait
+# install.packages("pROC")
+library(pROC)
+
+# Modèle sur data_train
+# Supposons que 'model_train' soit votre modèle sur data_train
+# Remplacez-le par votre propre modèle
+# model_train <- glm(def12_31 ~ ., data = data_train, family = "binomial")
+
+# Prédictions et probabilités pour data_train
+pred_train <- predict(modele_2, type = "response")
+roc_train <- roc(data_train$def12_31, pred_train)
+
+# Spécifier les limites pour le calcul de l'AUC partiel
+lower_limit <- 1
+upper_limit <- 0.5
+
+# Calculer l'AUC partiel
+partial_auc <- auc(roc_train, partial.auc = c(lower_limit, upper_limit))
+
+# Afficher l'AUC partiel
+cat("AUC partiel:", partial_auc, "\n")
+
+
+```
+
+
+Une AUC de 0.29 sur la première moitié de la courbe ROC indique que le modèle a une performance relativement faible dans la détection des vrais positifs tout en maintenant un faible taux de faux positifs, du moins dans cette plage spécifique de la courbe. Cela pourrait signifier que le modèle est meilleur pour classer correctement les échantillons négatifs, mais moins efficace pour les échantillons positifs dans cette région particulière.
+
+
+Maintenant, on affiche les courbes ROC sur l'échantillon test:
+
+
+```{r}
+library(pROC)
+
+
+# Prédictions et probabilités pour data_test
+pred_test_train <- predict(modele_2, newdata = data_test, type = "response")
+roc_test_train <- roc(data_test$def12_31, pred_test_train)
+
+
+# Prédictions et probabilités pour data_test
+pred_test_smote <- predict(modele, newdata = data_test, type = "response")
+roc_test_smote <- roc(data_test$def12_31, pred_test_smote)
+
+# Tracer les courbes ROC superposées
+plot(roc_test_train, col = "blue", main = "Courbes ROC sur l'échantillon test", lwd = 2)
+plot(roc_test_smote, col = "red", add = TRUE, lwd = 2)
+
+# Légendes
+legend("bottomright", legend = c("Score pour data_train", "Score pour data_train_smote"), col = c("blue", "red"), lwd = 4, cex = 1.1)
+
+# Ajouter le texte pour les AUC
+text(0, 0.7, paste("AUC2 =", round(roc_test_train$auc, 3)), col = "blue")
+text(0, 0.8, paste("AUC1 =", round(roc_test_smote$auc, 3)), col = "red")
+
+
+```
+
+
+On calcule les AUC sur la première moitié des courbes ROC:
+
+```{r}
+# Calculer l'AUC partiel pour le modèle sur data_test
+partial_auc_train <- pROC::roc(data_test$def12_31, pred_test_train, partial.auc = c(1, 0.5))
+cat("AUC partielle pour le modèle train sur data_test :", partial_auc_train$auc, "\n")
+
+# Calculer l'AUC partiel pour le modèle sur data_test_smote
+partial_auc_smote <- pROC::roc(data_test$def12_31, pred_test_smote, partial.auc = c(1, 0.5))
+cat("AUC partielle pour le modèle train_smote sur data_test :", partial_auc_smote$auc, "\n")
+
+
+```
+
+
+L'AUC sur la moitié de la courbe ROC sur data_test pour le modèle entraîné sur data_train_smote est de 0.36, alors que pour l'autre modèle elle vaut 0.35. 
+
+
+À travers l'analyse des courbes ROC sur les échantillons d'entraînement et de test pour les deux modèles, on constate que ces modèles présentent une généralisation adéquate, indiquant ainsi qu'il n'y a pas de sur-apprentissage significatif. Ils démontrent une capacité à généraliser efficacement à des données inconnues.
+
+
+-> En regardant les différents résultats de cette sous-partie, on voit que le modèle entraîné après avoir effectué un sur-échantillonnage avec la méthode SMOTE donne de meilleurs résultats.
+
+### (b) Lift
+
+
+
+```{r}
+predictions_prob <- predict(modele, newdata = data_test, type = "response")
+```
+
+
+
+
+```{r}
+scores <- predictions_prob
+```
+
+
+
+```{r}
+sorted_data <- data.frame(Score = scores, Individu = 1:nrow(data_test))
+sorted_data <- sorted_data[order(-sorted_data$Score), ]
+rownames(sorted_data) <- 1:nrow(sorted_data)
+```
+
+
+```{r}
+sorted_data
+```
+
+
+
+```{r}
+# Ajout de la colonne "Valeur_predite" avec des valeurs fictives (1 ou 0)
+sorted_data$Valeur_predite <- ifelse(sorted_data$Score > 0.5, 1, 0)  # Remplacez 'seuil' par la valeur de seuil souhaitée
+
+# Affichage du dataframe final
+print(sorted_data)
+
+```
+
+
+
+```{r}
+# Ajouter la vraie valeur de la variable cible au tableau trié
+sorted_data$Vraie_valeur <- data_test$def12_31[sorted_data$Individu]
+
+# Afficher le tableau mis à jour
+print(sorted_data)
+
+
+```
+
+
+```{r}
+sorted_data
+```
+
+
+
+On passe maintenant au tableau des lifts sur l'échantillon test pour le modèle appliqué aux données d'entraînement sur lesquelles on a appliqué la méthode SMOTE:
+
+
+```{r}
+# Supposons que vous ayez les scores prédits et la variable cible dans votre ensemble de test
+# Vous avez également trié les observations par ordre décroissant dans sorted_data
+
+# Charger le package pROC
+library(pROC)
+
+
+# Diviser les données triées en segments (déciles)
+num_segments <- 10
+segment_size <- nrow(sorted_data) / num_segments
+
+# Initialiser les vecteurs pour stocker les résultats
+decile <- numeric()
+effectif <- numeric()
+effectif_cum <- numeric()
+positifs <- numeric()
+positifs_cum <- numeric()
+lift <- numeric()
+lift_cum <- numeric()
+
+# Boucle à travers les segments
+for (i in 1:num_segments) {
+  start_index <- ((i - 1) * segment_size) + 1
+  end_index <- i * segment_size
+
+  # Extraire le segment
+  segment <- sorted_data[start_index:end_index, ]
+
+  # Calculer les statistiques pour le segment
+  decile[i] <- i
+  effectif[i] <- nrow(segment)
+  effectif_cum[i] <- sum(effectif[1:i])
+  positifs[i] <- sum(segment$Vraie_valeur == 1)
+  positifs_cum[i] <- sum(positifs[1:i])
+  lift[i] <- (positifs[i] / effectif[i]) / (sum(sorted_data$Vraie_valeur == 1) / nrow(sorted_data))
+  lift_cum[i] <- (positifs_cum[i] / effectif_cum[i]) / (sum(sorted_data$Vraie_valeur == 1) / nrow(sorted_data))
+}
+
+# Créer un tableau avec les résultats
+lift_table <- data.frame(
+  Decile = decile,
+  Effectif = effectif,
+  Effectif_Cumulé = effectif_cum,
+  Positifs = positifs,
+  Positifs_Cumulés = positifs_cum,
+  Lift = lift,
+  Lift_Cumulé = lift_cum
+)
+
+# Afficher le tableau
+print(lift_table)
+```
+
+Les résultats sont satisfaisants. On a un lift élevé pour le premier décile et des lifts cumulés élevés pour les 4 premiers déciles. C'est un modèle bien plus efficace qu'un modèle aléatoire.
+
+
+On passe maintenat au tableau de lift pour le modèle sur data_train:
+
+
+```{r}
+predictions_prob <- predict(modele_2, newdata = data_test, type = "response")
+```
+
+
+
+```{r}
+scores <- predictions_prob
+```
+
+
+
+
+```{r}
+sorted_data <- data.frame(Score = scores, Individu = 1:nrow(data_test))
+sorted_data <- sorted_data[order(-sorted_data$Score), ]
+rownames(sorted_data) <- 1:nrow(sorted_data)
+```
+
+
+
+
+
+```{r}
+sorted_data
+```
+
+
+
+
+```{r}
+# Ajout de la colonne "Valeur_predite" avec des valeurs fictives (1 ou 0)
+sorted_data$Valeur_predite <- ifelse(sorted_data$Score > 0.2, 1, 0)  # Remplacez 'seuil' par la valeur de seuil souhaitée
+
+# Affichage du dataframe final
+print(sorted_data)
+
+```
+
+
+
+
+```{r}
+# Ajouter la vraie valeur de la variable cible au tableau trié
+sorted_data$Vraie_valeur <- data_test$def12_31[sorted_data$Individu]
+
+# Afficher le tableau mis à jour
+print(sorted_data)
+```
+
+
+
+
+
+```{r}
+# Supposons que vous ayez les scores prédits et la variable cible dans votre ensemble de test
+# Vous avez également trié les observations par ordre décroissant dans sorted_data
+
+# Charger le package pROC
+library(pROC)
+
+
+# Diviser les données triées en segments (déciles)
+num_segments <- 10
+segment_size <- nrow(sorted_data) / num_segments
+
+# Initialiser les vecteurs pour stocker les résultats
+decile <- numeric()
+effectif <- numeric()
+effectif_cum <- numeric()
+positifs <- numeric()
+positifs_cum <- numeric()
+lift <- numeric()
+lift_cum <- numeric()
+
+# Boucle à travers les segments
+for (i in 1:num_segments) {
+  start_index <- ((i - 1) * segment_size) + 1
+  end_index <- i * segment_size
+
+  # Extraire le segment
+  segment <- sorted_data[start_index:end_index, ]
+
+  # Calculer les statistiques pour le segment
+  decile[i] <- i
+  effectif[i] <- nrow(segment)
+  effectif_cum[i] <- sum(effectif[1:i])
+  positifs[i] <- sum(segment$Vraie_valeur == 1)
+  positifs_cum[i] <- sum(positifs[1:i])
+  lift[i] <- (positifs[i] / effectif[i]) / (sum(sorted_data$Vraie_valeur == 1) / nrow(sorted_data))
+  lift_cum[i] <- (positifs_cum[i] / effectif_cum[i]) / (sum(sorted_data$Vraie_valeur == 1) / nrow(sorted_data))
+}
+
+# Créer un tableau avec les résultats
+lift_table <- data.frame(
+  Decile = decile,
+  Effectif = effectif,
+  Effectif_Cumulé = effectif_cum,
+  Positifs = positifs,
+  Positifs_Cumulés = positifs_cum,
+  Lift = lift,
+  Lift_Cumulé = lift_cum
+)
+
+# Afficher le tableau
+print(lift_table)
+```
+
+
+Les performances sont plutôt bonnes. Cependant, les résultats pour le modèle entraîné sur data_train_smote sont meilleurs.
+
+-> On décide de choisir comme modèle celui-ci.
+
+
+
+### (c) Recommandations, mesures de performances
+
+
+
+Voici les individus classés du plus bas score au plus haut score pour le modèle sur data_train_smote:
+
+
+```{r}
+# Inversez l'ordre des lignes dans sorted_data
+sorted_data_inverse <- sorted_data[rev(row.names(sorted_data)), ]
+
+# Vous pouvez également réinitialiser les indices si nécessaire
+rownames(sorted_data_inverse) <- 1:nrow(sorted_data_inverse)
+
+```
+
+
+
+```{r}
+sorted_data_inverse
+```
+
+
+Recommandation pour le score d'octroi: On voit sur le tableau de lift que 25 des 30 personnes qui font défaut se trouvent dans les 3 premiers déciles. La grande majorité des gens qui font défaut se trouvent dans ces déciles.
+
+La recommandation pour le score d'octroi est donc de prendre les 70 % les plus bas scorés, c'est à dire du décile 4 jusqu'au dernier décile. En effet, ces personnes sont moins susceptibles de faire défaut.
+
+De plus, 70 % correspond à 1771 individus sur 2530 qui se verront attribuer un crédit.
+
+
+```{r}
+# Tableau de loi jointe
+tableau_loi_jointe <- matrix(c(5, 1766, 1771, 25, 734, 759, 30, 2500, 2530), nrow = 3, byrow = TRUE)
+
+# Ajout des noms de lignes et colonnes
+rownames(tableau_loi_jointe) <- c("Octroi", "Pas d'octroi", "Tous")
+colnames(tableau_loi_jointe) <- c("Défaut", "Pas défaut", "Tous")
+
+# Affichage du tableau
+print(tableau_loi_jointe)
+
+```
+
+
+Interprétations et mesures de performances:
+
+Erreurs: - Pas d'octroi pour 734 personnes qui font pourtant pas défaut.
+         - Octroi pour 5 personnes qui font défaut.
+         
+-> Erreur sur 29.2 % des personnes.          
+         
+Qualités: - Le rappel (la sensibilité) est 25/30 = 0.83
+          - La précision (sachant les détectés) est 25/759. C'est un résultat petit mais attendu car le taux de cible est très petit. Voici un autre calcul de précision, qui calcule cette fois-ci l'ensemble de toutes les détections correctes parmi toutes les observations: (Vrais positifs + Vrais négatifs) / Nombre total de prédictions = 1791 / 2530
+                            = 0.7
+                            
+On a cette fois-ci une précision de 70% qui est plutôt correcte.
+
+
+## (iii) Conclusion régression logistique et performances
+
+Nous avons vu 2 modèles de régression logistique, une sur data_train et l'autre sur data_train_smote, la table sur laquelle on a effectué un sur-échantillonnage avec la méthode SMOTE. 
+
+On a vu que le modèle sur data_train_smote donne des meilleurs résultats. 
+En effet, si l'on ne fait pas de ré-échantillonnage, alors le modèle a du mal à détecter les cas positifs.
+
+Nous avons utilisé divers outils de mesure des performances, et pour résumer ceci, nous pouvons dire que les performances qu'on obtient sont satisfaisantes.
+Le modèle avec ré-échantillonnage arrive à faire des meilleures prédictions pour capturer les gens qui ne font pas défaut et ceux qui font défaut dans la grande majorité des cas.
+
+
